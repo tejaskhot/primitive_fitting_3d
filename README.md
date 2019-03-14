@@ -3,6 +3,7 @@ The goal for the 3D primitive fitting task is to represent buildings and other m
 
 ![Overall Pipeline](images/pipeline.png)
 ![Model Architecture](images/model.png)
+![Results on synthetic data](images/results.png)
 
 ## Getting Started
 
