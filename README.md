@@ -1,8 +1,11 @@
 # 3D Primitive Fitting to Point Clouds
 The goal for the 3D primitive fitting task is to represent buildings and other man-made structures as a collection of parameterized 3D volumetric primitives. The input for this task is a 3D point cloud with only (x,y,z) point tuples and no color information. The expected output is a collection of primitives (for now, cuboids) parameterized by their shape, location and orientation which is represented as a 7 dimensional vector: (width, height, depth, location_x, location_y, location_z, angle_theta).
 
+### Overall Pipeline
 ![Overall Pipeline](images/pipeline.png)
+### Model Architecture
 ![Model Architecture](images/model.png)
+### Results on synthetic data
 ![Results on synthetic data](images/results.png)
 
 ## Getting Started
