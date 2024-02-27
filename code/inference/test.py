@@ -10,15 +10,16 @@ from torch.utils.data import DataLoader
 from torch.autograd import Variable
 import torch.nn.functional as F
 sys.path.append('../core/')
+
 from model import *
 from plot import *
 from plyfile import PlyData
 import ipdb
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--num_points', type=int, default=4096, help='number of points')
-parser.add_argument('--num_primitives', type=int, default=5, help='number of cuboids')
-parser.add_argument('--num_params', type=int, default=6, help='number of parameters to predict per primitive')
+parser.add_argument('--num_points', type=np.int_, default=4096, help='number of points')
+parser.add_argument('--num_primitives', type=np.int_, default=5, help='number of cuboids')
+parser.add_argument('--num_params', type=np.int_, default=6, help='number of parameters to predict per primitive')
 
 parser.add_argument('--real', default=True, type=lambda x: (str(x).lower() == 'true'), help='use real data')
 parser.add_argument('--save', default=False, type=lambda x: (str(x).lower() == 'true'), help='if false, matplotlib plots are displayed')
@@ -54,8 +55,8 @@ else:
 if len(opt.aoi)>0:
     aoi = [opt.aoi]
 else:
-    aoi = ['wpafb_d1', 'wpafb_d2','ucsd_d3', 'jacksonville_d4']
-    # aoi = ['wpafb_d2']
+    # aoi = ['wpafb_d1', 'wpafb_d2','ucsd_d3', 'jacksonville_d4']
+    aoi = ['COMMERCIALhotel_building_mesh0461']
 
 for aoi_name in aoi:
     if not os.path.exists(os.path.join(opt.save_path, aoi_name)):
@@ -67,8 +68,11 @@ for aoi_name in aoi:
         os.makedirs(os.path.join(opt.save_path, aoi_name, 'params'))
         os.makedirs(os.path.join(opt.save_path, aoi_name, 'ply_primitives'))
         os.makedirs(os.path.join(opt.save_path, aoi_name, 'ply_overlayed'))
+    print('Processing : ', aoi_name)
+    print(glob.glob(os.path.join(data_folder, '{}*.ply'.format(aoi_name))))
     for fname in glob.glob(os.path.join(data_folder, '{}*.ply'.format(aoi_name))):
         points = PlyData.read(fname)
+        print('Processing : ', fname)
         points = np.asarray(points['vertex'].data.tolist(), dtype=np.float32)
         indices = np.random.randint(points.shape[0], size=4096)
         points = points[indices,:3]
@@ -86,7 +90,8 @@ for aoi_name in aoi:
 
         pred, probs = model(points)
         # determine count based on stopping probability
-        idx = torch.argmax(probs>0.5, 1)
+        probs_int = (probs>0.5).long()
+        idx = torch.argmax(probs_int, 1)
         print("="*50)
         print('num primitives predicted : ', (idx+1).data.cpu().numpy()[0])
 
@@ -97,26 +102,26 @@ for aoi_name in aoi:
             pred = pred[:(idx[0]+1)]
 
         # scale result to be in same world coordinates as original
-        # points = points * scale
-        # points = points + center
-        # pred[:,:6] *= scale
-        # pred[:,:3] += center
+        points = points * scale
+        points = points + center
+        pred[:,:6] *= scale
+        pred[:,:3] += center
 
-        # import ipdb
-        # ipdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
         # make primitives touch the ground
 
-        # zmin = np.min(points, 0)
-        # for i in range(len(pred)):
-        #     diff = pred[i,2] - zmin[-1]
-        #     pred[i,2] -= diff
+        zmin = np.min(points, 0)
+        for i in range(len(pred)):
+            diff = pred[i,2] - zmin[-1]
+            pred[i,2] -= diff
 
         # save params
-        # name_par = len([_ for _ in os.listdir(os.path.join(opt.save_path, aoi_name, 'params')) if 'npy' in _])
-        # np.save(os.path.join(opt.save_path, aoi_name, 'params', '{}_{}.npy'.format(aoi_name, name_par)), np.array(pred))
-        # print('params saved at : ', os.path.join(opt.save_path, 'params', '{}_{}.npy'.format(aoi_name, name_par)))
+        name_par = len([_ for _ in os.listdir(os.path.join(opt.save_path, aoi_name, 'params')) if 'npy' in _])
+        np.save(os.path.join(opt.save_path, aoi_name, 'params', '{}_{}.npy'.format(aoi_name, name_par)), np.array(pred))
+        print('params saved at : ', os.path.join(opt.save_path, 'params', '{}_{}.npy'.format(aoi_name, name_par)))
         # save obj files
-        # plot_obj(points, pred, save_path=os.path.join(opt.save_path, aoi_name), aoi_name=aoi_name)
+        plot_obj(points, pred, save_path=os.path.join(opt.save_path, aoi_name), aoi_name=aoi_name)
         if opt.save_plot:
             # save matplotlib plots
             draw_cube_points(pred, points, save=opt.save, save_path=os.path.join(opt.save_path, aoi_name), save_gif=opt.save_gif, aoi_name=aoi_name)

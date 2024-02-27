@@ -3,7 +3,7 @@ import numpy as np
 cube_v = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [0.0, 1.0, 1.0], [1.0, 0.0, 0.0], [1.0, 0.0, 1.0], [1.0, 1.0, 0.0], [1.0, 1.0, 1.0]])
 cube_v = cube_v - 0.5
 
-cube_f = np.array([[1,  7,  5 ], [1,  3,  7 ], [1,  4,  3 ], [1,  2,  4 ], [3,  8,  7 ], [3,  4,  8 ], [5,  7,  8 ], [5,  8,  6 ], [1,  5,  6 ], [1,  6,  2 ], [2,  6,  8 ], [2,  8,  4]]).astype(np.int)
+cube_f = np.array([[1,  7,  5 ], [1,  3,  7 ], [1,  4,  3 ], [1,  2,  4 ], [3,  8,  7 ], [3,  4,  8 ], [5,  7,  8 ], [5,  8,  6 ], [1,  5,  6 ], [1,  6,  2 ], [2,  6,  8 ], [2,  8,  4]]).astype(np.int_)
 
 def append_obj(mf_handle, vertices, faces):
     for vx in range(vertices.shape[0]):
@@ -49,7 +49,7 @@ def points_to_cubes(points, edge_size=0.05):
     v_all = np.tile(cube_v, [tot_points, 1])
     f_all = np.tile(cube_f, [tot_points, 1])
     f_offset = np.tile(np.linspace(0, 12*tot_points-1, 12*tot_points), 3).reshape(3, 12*tot_points).transpose()
-    f_offset = (f_offset//12 * 8).astype(np.int)
+    f_offset = (f_offset//12 * 8).astype(np.int_)
     f_all += f_offset
     for px in range(points.shape[0]):
         v_all[v_counter:v_counter+8,:] *= edge_size
@@ -73,7 +73,7 @@ def params_to_cubes(params):
     v_all = cube_v
     f_all = cube_f
     f_offset = np.tile(np.linspace(0, 12*tot_points-1, 12*tot_points), 3).reshape(3, 12*tot_points).transpose()
-    f_offset = (f_offset//12 * 8).astype(np.int)
+    f_offset = (f_offset//12 * 8).astype(np.int_)
 
     S = np.diag(params[3:6]*2)
     v_all = np.dot(v_all, S)
