@@ -1,7 +1,7 @@
-scipy==1.1.0
-opencv_python==3.4.1.15
-numpy==1.15.0
-torch==0.4.1
-matplotlib==2.2.3
-plyfile==0.5
-Pillow==5.2.0
+scipy==1.10.1
+opencv_python==4.8.1.78
+numpy==1.24.3
+torch==2.2.0
+matplotlib==3.7.3
+plyfile==1.0.2
+Pillow==10.1.0

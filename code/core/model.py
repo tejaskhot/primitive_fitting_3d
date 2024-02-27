@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 
+
 class PointNetfeat(nn.Module):
     def __init__(self, num_points=2500, input_dim=3, feat_size=1024):
         super(PointNetfeat, self).__init__()
@@ -20,6 +21,7 @@ class PointNetfeat(nn.Module):
         x = self.mp1(x)
         x = x.view(-1, self.feat_size)
         return x
+
 
 class PointNet(nn.Module):
     def __init__(self, num_points=4096, num_channels=3):
@@ -55,14 +57,17 @@ class PointNet(nn.Module):
         x = F.leaky_relu(self.fc2(x))
         # concat
         x_expand = x.unsqueeze(-1).repeat(1, 1, self.num_points)
-        out = torch.cat([global_feat, x_expand],1)
+        out = torch.cat([global_feat, x_expand], 1)
         # conv -- bn -- leaky_relu
         out = F.leaky_relu(self.conv6(out))
         out = F.leaky_relu(self.conv7(out))
         return out
 
+
 class PrimitiveNet(nn.Module):
-    def __init__(self, num_points=2500, input_dim=3, feat_size=1024, hidden_size=256, out_size=10):
+    def __init__(
+        self, num_points=2500, input_dim=3, feat_size=1024, hidden_size=256, out_size=10
+    ):
         super(PrimitiveNet, self).__init__()
         self.num_points = num_points
         self.input_dim = input_dim
@@ -79,6 +84,7 @@ class PrimitiveNet(nn.Module):
         x = self.fc2(x)
         return x
 
+
 class MetricModel(nn.Module):
     def __init__(self, num_points, num_channels, feat_size=128):
         super(MetricModel, self).__init__()
@@ -93,10 +99,20 @@ class MetricModel(nn.Module):
 
         # embedding features
         xfeat1 = self.conv2(x)
-        return {'feat': xfeat1.permute(0,2,1)}
+        return {"feat": xfeat1.permute(0, 2, 1)}
+
 
 class RLNet(nn.Module):
-    def __init__(self, num_points=2048, input_dim=3, feat_size=1024, hidden_size=256, out_size=7, num_primitives=3, encoder=None):
+    def __init__(
+        self,
+        num_points=2048,
+        input_dim=3,
+        feat_size=1024,
+        hidden_size=256,
+        out_size=7,
+        num_primitives=3,
+        encoder=None,
+    ):
         super(RLNet, self).__init__()
         self.num_points = num_points
         self.input_dim = input_dim
@@ -113,11 +129,11 @@ class RLNet(nn.Module):
             )
         else:
             self.encoder = nn.Sequential(
-                    PointNetfeat(self.num_points),
-                    nn.Linear(self.feat_size, 256),
-                    nn.ReLU(),
-                    nn.Linear(256, 100),
-                )
+                PointNetfeat(self.num_points),
+                nn.Linear(self.feat_size, 256),
+                nn.ReLU(),
+                nn.Linear(256, 100),
+            )
         self.lstm = nn.LSTMCell(100, 100)
         # self.gru = nn.GRUCell(100, 100)
         self.fc1 = nn.Linear(100, self.out_size)
@@ -127,7 +143,9 @@ class RLNet(nn.Module):
 
     def forward(self, x):
         x = self.encoder(x)
-        hx, cx = Variable(torch.zeros(x.size(0), 100).cuda()), Variable(torch.zeros(x.size(0), 100).cuda())
+        hx, cx = Variable(torch.zeros(x.size(0), 100).cuda()), Variable(
+            torch.zeros(x.size(0), 100).cuda()
+        )
         # hx = Variable(torch.zeros(x.size(0), 100).cuda())
         outputs = []
         probs = []
@@ -136,10 +154,19 @@ class RLNet(nn.Module):
             # hx = self.gru(x, hx)
             outputs.append(self.fc1(hx))
             probs.append(torch.sigmoid(self.fc2(hx)))
-        return torch.cat((outputs),1), torch.cat((probs),1)
+        return torch.cat((outputs), 1), torch.cat((probs), 1)
+
 
 class PrimitiveProbNet(nn.Module):
-    def __init__(self, num_points=2500, input_dim=3, feat_size=1024, hidden_size=256, out_size=10, num_primitives=5):
+    def __init__(
+        self,
+        num_points=2500,
+        input_dim=3,
+        feat_size=1024,
+        hidden_size=256,
+        out_size=10,
+        num_primitives=5,
+    ):
         super(PrimitiveProbNet, self).__init__()
         self.num_points = num_points
         self.input_dim = input_dim
@@ -161,6 +188,7 @@ class PrimitiveProbNet(nn.Module):
         out = self.fc2(F.relu(self.fc1(x)))
         return out, probs
 
+
 class PointEncoder(nn.Module):
     def __init__(self, num_points=256, feat_size=1024, out_size=10):
         super(PointEncoder, self).__init__()
@@ -175,8 +203,9 @@ class PointEncoder(nn.Module):
         x = self.fc2(x)
         return x
 
+
 class PointDecoder(nn.Module):
-    def __init__(self, num_points = 2048, k = 2):
+    def __init__(self, num_points=2048, k=2):
         super(PointDecoder, self).__init__()
         self.num_points = num_points
         self.fc1 = nn.Linear(100, 128)
@@ -185,6 +214,7 @@ class PointDecoder(nn.Module):
         self.fc4 = nn.Linear(512, 1024)
         self.fc5 = nn.Linear(1024, self.num_points * 3)
         self.th = nn.Tanh()
+
     def forward(self, x):
         batchsize = x.size()[0]
         x = F.relu(self.fc1(x))
@@ -195,15 +225,16 @@ class PointDecoder(nn.Module):
         x = x.view(batchsize, 3, self.num_points)
         return x
 
+
 class PointNetAE(nn.Module):
-    def __init__(self, num_points = 2048, k = 2):
+    def __init__(self, num_points=2048, k=2):
         super(PointNetAE, self).__init__()
         self.num_points = num_points
         self.encoder = nn.Sequential(
-        PointNetfeat(num_points),
-        nn.Linear(1024, 256),
-        nn.ReLU(),
-        nn.Linear(256, 100),
+            PointNetfeat(num_points),
+            nn.Linear(1024, 256),
+            nn.ReLU(),
+            nn.Linear(256, 100),
         )
         self.decoder = PointDecoder(num_points)
 
@@ -212,61 +243,62 @@ class PointNetAE(nn.Module):
         x = self.decoder(x)
         return x
 
-if __name__ == '__main__':
-    sim_data = Variable(torch.rand(2,3,4096))
+
+if __name__ == "__main__":
+    sim_data = Variable(torch.rand(2, 3, 4096))
 
     pointfeat = PointNetfeat()
     out = pointfeat(sim_data)
-    print('point feat', out.size())
+    print("point feat", out.size())
 
     # test PrimitiveNet
-    model = PrimitiveNet(out_size=3*7)
+    model = PrimitiveNet(out_size=3 * 7)
     out = model(sim_data)
     loss = out.mean()
-    print('out.size() : ', out.size())
+    print("out.size() : ", out.size())
     print(out)
     print(loss)
     loss.backward()
-    print('backward pass done')
+    print("backward pass done")
 
-    print('-'*50)
+    print("-" * 50)
     # random data
     batch_size = 4
     num_points = 4096
     num_channels = 3
-    sim_data = Variable(torch.rand(batch_size,num_channels,num_points).cuda())
-    print('MetricModel')
+    sim_data = Variable(torch.rand(batch_size, num_channels, num_points).cuda())
+    print("MetricModel")
     metric = MetricModel(num_points=num_points, num_channels=num_channels)
     metric.cuda()
     output = metric(sim_data)
-    print("output['feat'].shape : {}".format(output['feat'].shape))
-    loss = output['feat'].mean()
+    print("output['feat'].shape : {}".format(output["feat"].shape))
+    loss = output["feat"].mean()
     loss.backward()
 
-    print('-'*50)
-    print('RLNet')
-    sim_data = Variable(torch.rand(32,3,4096).cuda(), requires_grad=True)
+    print("-" * 50)
+    print("RLNet")
+    sim_data = Variable(torch.rand(32, 3, 4096).cuda(), requires_grad=True)
     model = RLNet(num_points=4096)
     model.cuda()
     outputs, probs = model(sim_data)
     loss = outputs.sum()
     loss.backward()
-    print('sim_data.size() : ', sim_data.size())
-    print('outputs.size() : ', outputs.size())
-    print('probs.size() : ', probs.size())
+    print("sim_data.size() : ", sim_data.size())
+    print("outputs.size() : ", outputs.size())
+    print("probs.size() : ", probs.size())
     print(loss)
-    print('backward pass done')
+    print("backward pass done")
 
-    print('-'*50)
-    print('PrimitiveProbNet')
-    sim_data = Variable(torch.rand(32,3,4096).cuda(), requires_grad=True)
+    print("-" * 50)
+    print("PrimitiveProbNet")
+    sim_data = Variable(torch.rand(32, 3, 4096).cuda(), requires_grad=True)
     model = PrimitiveProbNet(num_points=4096)
     model.cuda()
     outputs, probs = model(sim_data)
     loss = outputs.sum()
     loss.backward()
-    print('sim_data.size() : ', sim_data.size())
-    print('outputs.size() : ', outputs.size())
-    print('probs.size() : ', probs.size())
+    print("sim_data.size() : ", sim_data.size())
+    print("outputs.size() : ", outputs.size())
+    print("probs.size() : ", probs.size())
     print(loss)
-    print('backward pass done')
+    print("backward pass done")
